@@ -14,29 +14,52 @@ $$
 $$ LANGUAGE plpgSQL;
 */
 
-CREATE OR REPLACE FUNCTION inserta_estado(IN TEXT nombre_pais, IN TEXT codigo_postal)
+CREATE OR REPLACE FUNCTION prueba(IN country TEXT, IN postalCode TEXT)
 RETURNS VOID
 AS $$ 
 DECLARE
-  rta TEXT;
+  cityAns TEXT;
+  activeQuantity INTEGER;
+  expiredQuantity INTEGER;
 BEGIN
 
-	SELECT count(*) INTO rta 
-	FROM whois_sample 
-	where expiresDate >= (select CURRENT_TIMESTAMP);
 
-Raise notice '%',rta;
+SELECT count(*) INTO activeQuantity 
+  FROM whois_sample 
+  WHERE postalCode = registrant_postalCode AND  expiresDate >= (select CURRENT_TIMESTAMP);
+  
+SELECT count(*) INTO expiredQuantity 
+  FROM whois_sample 
+  WHERE postalCode = registrant_postalCode AND expiresDate < (select CURRENT_TIMESTAMP);
+  
+  
+SELECT registrant_city INTO cityAns
+FROM whois_sample
+ WHERE registrant_postalCode = postalCode AND registrant_country = country
+ ORDER BY registrant_city ASC
+ LIMIT 1 OFFSET  (SELECT (COUNT(registrant_city)/2)+1
+                  FROM whois_sample
+                  WHERE registrant_postalCode = postalCode AND registrant_country = country)-1;
+IF NOT FOUND THEN 
+ELSE
+INSERT INTO muestra VALUES (country, postalCode, cityAns, 'ACTIVO', activeQuantity );
+INSERT INTO muestra VALUES (country, postalCode, cityAns, 'EXPIRADO', expiredQuantity ); 
+END IF;
+
+EXCEPTION
+
+WHEN SQLSTATE '23505' THEN
+ raise notice '% % ', SQLSTATE, SQLERRM;
+WHEN OTHERS THEN
+raise notice 'error';
 END;
 $$ LANGUAGE plpgsql;
 
 DO $$
 BEGIN
- PERFORM inserta_estado('UNITED STATES', '32258');
+ PERFORM prueba('AUSTRALIA', '2142');
 END;
 $$;
-
-
-
 
 
 
