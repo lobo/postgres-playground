@@ -54,9 +54,9 @@ END IF;
         EXCEPTION
         
         WHEN SQLSTATE '23505' THEN
-         raise notice '% % ', SQLSTATE, SQLERRM;
+         raise notice 'A state has already been added for the country % and zip code % ', country, postalCode;
         WHEN OTHERS THEN
-        raise notice 'error';
+        raise notice '% % ', SQLSTATE, SQLERRM;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -83,7 +83,7 @@ ORDER BY registrant_postalCode ASC
                 WHERE sub.registrant_postalCode = postalCode )-1;
 BEGIN
         TRUNCATE muestra;
-     IF num > 0 THEN   
+     IF num >= 0 THEN   
         SELECT registrant_postalCode INTO pc
         FROM whois_sample
         WHERE registrant_postalCode = postalCode;
@@ -106,9 +106,7 @@ BEGIN
                                 PERFORM inserta_estado(country, postalCodeValues); 
                         END LOOP;
                 CLOSE myCursor;
-        END IF;
-     ELSEIF num = 0 THEN
-          PERFORM inserta_estado(country, postalCode); 
+        END IF;  
      END IF;   
 
 END;
